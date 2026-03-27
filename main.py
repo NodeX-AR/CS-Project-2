@@ -10,7 +10,6 @@ mydb = mysql.connector.connect(
         )
 
 def get_random_question(cursor):
-    """Fetches a random question from the database."""
     cursor.execute("SELECT * FROM questions ORDER BY RAND() LIMIT 1")
     question = cursor.fetchone()
     return question
@@ -18,7 +17,7 @@ def get_random_question(cursor):
 def run_quiz():
     mycursor = mydb.cursor()
     score = 0
-
+    print
     print("Welcome to the Online Quiz Portal!")
     user_name = input("Enter your name: ")
 
