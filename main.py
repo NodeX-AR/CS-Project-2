@@ -1,55 +1,84 @@
 import mysql.connector
 import random
-import sys
 
-mydb = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="password", # Replace with your MySQL password
-            database="online_quiz"
-        )
+# 1. Connection
+db = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="Aswanth@2009",
+    database="quiz_db"
+)
+cursor = db.cursor()
 
-def get_random_question(cursor):
-    cursor.execute("SELECT * FROM questions ORDER BY RAND() LIMIT 1")
-    question = cursor.fetchone()
-    return question
+name = input("Enter your Name: ")
 
-def run_quiz():
-    mycursor = mydb.cursor()
-    score = 0
-    print
-    print("Welcome to the Online Quiz Portal!")
-    user_name = input("Enter your name: ")
-
-    # Fetch a question
-    question_data = get_random_question(mycursor)
-
-    if question_data:
-        qid, q_text, op_a, op_b, op_c, op_d, correct_ans = question_data
-
-        print(f"\nQuestion: {q_text}")
-        print(f"A. {op_a}")
-        print(f"B. {op_b}")
-        print(f"C. {op_c}")
-        if op_c: print(f"C. {op_c}")
-        if op_d: print(f"D. {op_d}")
-
-        user_answer = input("Enter your answer (e.g., 'Paris'): ")
-
-        if user_answer.strip().lower() == correct_ans.strip().lower():
-            print("Correct answer!")
-            score += 1
-        else:
-            print(f"Wrong answer. The correct answer was: {correct_ans}")
-    else:
-        print("No questions found in the database.")
-
-    print(f"\nQuiz finished, {user_name}! Your final score is {score}.")
+if name.lower() == "admin":
+    q = input("Question: ")
+    o1 = input("Option 1: ")
+    o2 = input("Option 2: ")
+    o3 = input("Option 3: ")
+    o4 = input("Option 4: ")
+    ans = input("Correct Option Text: ") 
     
-    # Store score in the database (optional, requires a scores table)
+    query = "INSERT INTO questions (qtext, opt1, opt2, opt3, opt4, ans) VALUES (%s, %s, %s, %s, %s, %s)"
+    cursor.execute(query, (q, o1, o2, o3, o4, ans))
+    db.commit()
+    print("Question Saved.")
 
-    mycursor.close()
-    mydb.close()
+else:
+    cursor.execute("SELECT * FROM questions")
+    all_data = cursor.fetchall() 
+    
+    if len(all_data) < 10:
+        print("Not enough questions in the database.")
+    else:
+        quiz_questions = random.sample(all_data, 10)
+        
+        score = 0
+        for row in quiz_questions:
+            print(row[1])
+            print("1.", row[2], " 2.", row[3], " 3.", row[4], " 4.", row[5])
+            
+            choice = input("Enter Option Number (1, 2, 3, or 4): ")
+            
+            user_ans = ""
+            if choice == "1": user_ans = row[2]
+            elif choice == "2": user_ans = row[3]
+            elif choice == "3": user_ans = row[4]
+            elif choice == "4": user_ans = row[5]
+            
+            if user_ans.strip().lower() == row[6].strip().lower():
+                print("Correct!")
+                score += 1
+            else:
+                print("Wrong! Correct answer was:", row[6])
+        
+        perc = (score / 10) * 100
+        
+        cursor.execute("SELECT score FROM students WHERE name = %s", (name,))
+        record = cursor.fetchone()
+        
+        if record == None:
+            cursor.execute("INSERT INTO students VALUES (%s, %s)", (name, perc))
+            db.commit()
+            display_score = perc
+        else:
+            prev_best = record[0]
+            if perc > prev_best:
+                cursor.execute("UPDATE students SET score = %s WHERE name = %s", (perc, name))
+                db.commit()
+                display_score = perc
+                print("New High Score!")
+            else:
+                print("You scored lower than your best.")
+                display_score = prev_best
+        
+        print("\n------------------------------")
+        print("          CERTIFICATE")
+        print("------------------------------")
+        print("Name:", name)
+        print("Marks Scored:", score, "/ 10")
+        print("High Score Percentage:", display_score, "%")
+        print("------------------------------")
 
-
-run_quiz()
+db.close()
