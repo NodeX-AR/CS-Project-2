@@ -5,7 +5,7 @@ import random
 db = mysql.connector.connect(
     host="localhost",
     user="root",
-    password="Aswanth@2009",
+    password="<password>",
     database="quiz_db"
 )
 cursor = db.cursor()
